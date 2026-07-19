@@ -60,6 +60,17 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
     def _resolved_provider(self) -> str:
         return self.custom_llm_provider or "anthropic"
 
+    def handles_web_search_natively(self) -> bool:
+        # anton-fix: the base returns True (real Anthropic API runs web_search
+        # server-side). But in this fleet, provider=anthropic is the Claude Max
+        # OAuth passthrough via auth-broker, which is NOT entitled to the billed
+        # web_search server tool — so deferring to "native" leaves web search
+        # unhandled and Claude Code gets no results. Return False so
+        # websearch_interception handles web-search-only requests via SearXNG.
+        # (No genuine native-Anthropic web search flows through this proxy —
+        # Claude Code direct uses Claude Max, not litellm.)
+        return False
+
     def get_supported_anthropic_messages_params(self, model: str) -> list:
         return [
             "messages",
