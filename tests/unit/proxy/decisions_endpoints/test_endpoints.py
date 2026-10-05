@@ -6,7 +6,10 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Final
 
+import fakeredis
+import fakeredis.aioredis
 import pytest
+import redis.asyncio
 import respx
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -50,6 +53,16 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     monkeypatch.setenv("OPENAI_API_KEY", "fake-openai-key")
     monkeypatch.setenv("OPENAI_API_BASE", "https://fake-openai.example")
     monkeypatch.setenv("REDIS_HOST", "localhost")
+    fake_server: Final = fakeredis.FakeServer()
+    monkeypatch.setattr(litellm._redis, "get_redis_client", lambda **_: fakeredis.FakeRedis(server=fake_server))
+    monkeypatch.setattr(
+        litellm._redis, "get_redis_async_client", lambda **_: fakeredis.aioredis.FakeRedis(server=fake_server)
+    )
+    monkeypatch.setattr(
+        litellm._redis,
+        "get_redis_connection_pool",
+        lambda **_: redis.asyncio.ConnectionPool(connection_class=fakeredis.aioredis.FakeConnection, server=fake_server),
+    )
     cleanup_router_config_variables()
     config_path: Final = Path(__file__).parents[1] / "test_configs" / "test_config_no_auth.yaml"
     asyncio.run(initialize(config=str(config_path), debug=True))
