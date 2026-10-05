@@ -70,7 +70,7 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
         # websearch_interception handles web-search-only requests via SearXNG.
         # (No genuine native-Anthropic web search flows through this proxy —
         # Claude Code direct uses Claude Max, not litellm.)
-        return False
+        return self._resolved_provider != "anthropic" and super().handles_web_search_natively()
 
     def get_supported_anthropic_messages_params(self, model: str) -> list:
         return [
