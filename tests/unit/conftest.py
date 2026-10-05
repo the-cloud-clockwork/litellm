@@ -12,6 +12,10 @@ import httpx
 import pytest
 from pytest_socket import enable_socket, socket_allow_hosts
 
+# Unit tests must never reach a developer's real Redis: RedisCache.flush_cache is FLUSHALL.
+for _redis_env in ("REDIS_URL", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD", "REDIS_SSL"):
+    os.environ.pop(_redis_env, None)
+
 HOST_ENVIRONMENT_ALLOWLIST: Final = frozenset(
     (
         "PATH",
